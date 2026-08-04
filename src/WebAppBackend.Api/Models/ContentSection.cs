@@ -29,7 +29,7 @@ public class ContentSection
 	public string Html { get; set; } = string.Empty;
 
 	[JsonConverter(typeof(JsonStringEnumConverter))]
-	public SectionType Type { get; set; }
+	public SectionType Type { get; set; } = SectionType.Expansion;
 
 	public static SectionType TextToType(string? xmlAttribute)
 	{
