@@ -55,9 +55,9 @@ public class XmlContentService : IContentService
 				.Elements("Section")
 				.Select((element, index) => new ContentSection
 				{
-					Id = (string?)element.Attribute("id") ?? $"section-{index}",
-					Title = (string?)element.Attribute("title") ?? $"Section {index + 1}",
-					Description = (string?)element.Attribute("description") ?? string.Empty,
+					Id = (string?)element.Attribute("id"),
+					Title = (string?)element.Attribute("title"),
+					Description = (string?)element.Attribute("description"), // null is fine.
 					Order = index + 1, // Avoid falsy 0-based order; start at 1.
 					Html = (element.Element("Content")?.Value ?? string.Empty).Trim(),
 					Type = ContentSection.TextToType((string?)element.Attribute("type"))
