@@ -62,7 +62,6 @@ public class XmlContentService : IContentService
 					Html = (element.Element("Content")?.Value ?? string.Empty).Trim(),
 					Type = ContentSection.TextToType((string?)element.Attribute("type"))
 				})
-				.OrderBy(s => s.Order)
 				.ToList();
 
 			return sections ?? new List<ContentSection>();
