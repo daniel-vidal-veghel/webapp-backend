@@ -48,7 +48,7 @@
 		]]></Content>
 	</Section>
 	
-	<Section id="" title="" type="divider"></Section>
+	<Section type="divider"></Section>
 		
 	<Section id="professional-history" title="Professionele geschiedenis" type="header">
 		<Content><![CDATA[Professionele geschiedenis]]></Content>
@@ -193,7 +193,7 @@
 		</Content>
 	</Section>
 
-	<Section id="" title="" type="divider"></Section>
+	<Section type="divider"></Section>
 
 	<Section id="hobbies" title="Hobbies">
 		<Content>
