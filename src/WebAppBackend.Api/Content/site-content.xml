@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Site>
-	<Section id="personalia" order="1" title="Persoonlijke gegevens">
+	<Section id="personalia" title="Persoonlijke gegevens">
 		<Content><![CDATA[
 			Naam: Daniel Vidal<br>
 			Woonplaats: Meierijstad, Nederland<br>
@@ -9,7 +9,7 @@
 		]]></Content>
 	</Section>
 	
-	<Section id="stack" order="2" title="Stack">
+	<Section id="stack" title="Stack">
 		<Content>
 			<![CDATA[
 			<ul>
@@ -25,7 +25,7 @@
 		</Content>
 	</Section>
 
-	<Section id="skills" order="3" title="Skills">
+	<Section id="skills" title="Skills">
 		<Content>
 	<![CDATA[
 			Development: <br>
@@ -40,7 +40,7 @@
 		]]></Content>
 	</Section>
 	
-	<Section id="profile" order="4" title="Profiel">
+	<Section id="profile" title="Profiel">
 		<Content><![CDATA[
 			C# developer die in '99 als C++ hobbyist begonnen is. <br>
 			3 jaar ervaring als .Net developer. <br>
@@ -48,13 +48,13 @@
 		]]></Content>
 	</Section>
 	
-	<Section id="" order="5" title="" type="divider"></Section>
+	<Section id="" title="" type="divider"></Section>
 		
-	<Section id="professional-history" order="6" title="Professionele geschiedenis" type="header">
+	<Section id="professional-history" title="Professionele geschiedenis" type="header">
 		<Content><![CDATA[Professionele geschiedenis]]></Content>
 	</Section>
 	
-	<Section id="this-site" order="7" title="Deze site / portfolio">
+	<Section id="this-site" title="Deze site / portfolio">
 		<Content>
 			<![CDATA[
 			C# developer die in '99 als C++ hobbyist begonnen is. <br>
@@ -64,7 +64,7 @@
 		</Content>
 	</Section>
 
-	<Section id="sps" order="8" title="Smart Production Solutions" description="Full-stack developer voor Smart Production Solutions">
+	<Section id="sps" title="Smart Production Solutions" description="Full-stack developer voor Smart Production Solutions">
 		<Content>
 			<![CDATA[
 			<p>Jan 2026 – Aug2026 (contract basis)</p>
@@ -76,7 +76,7 @@
 		</Content>
 	</Section>
 	
-	<Section id="interregnum" order="9" title="Interregnum" >
+	<Section id="interregnum" title="Interregnum" >
 		<Content>
 			<![CDATA[
 			<p>Dec 2024 – Dec 2025</p>
@@ -87,7 +87,7 @@
 		</Content>
 	</Section>
 
-	<Section id="andes" order="10" title="Andes" description="Full-stack developer voor Andes BV">
+	<Section id="andes" title="Andes" description="Full-stack developer voor Andes BV">
 		<Content>
 			<![CDATA[
 			<p>Dec 2022 – Dec 2024</p>
@@ -133,7 +133,7 @@
 		</Content>
 	</Section>
 
-	<Section id="bee-ideas" order="11" title="BEE-Ideas" description="Full-stack Traineeship via BEE-Ideas" >
+	<Section id="bee-ideas" title="BEE-Ideas" description="Full-stack Traineeship via BEE-Ideas" >
 		<Content>
 			<![CDATA[
 			<p>Feb 2022 – Dec 2022</p>
@@ -172,7 +172,7 @@
 		</Content>
 	</Section>
 
-	<Section id="not-it" order="12" title="Begin carriere" description="Begin carriere / Niet IT gerelateerd">
+	<Section id="not-it" title="Begin carriere" description="Begin carriere / Niet IT gerelateerd">
 		<Content>
 			<![CDATA[
 			<p><b>Process lijn operator / Mars, Veghel (Juli 2019 - Dec 2021)</b><br>
@@ -193,9 +193,9 @@
 		</Content>
 	</Section>
 
-	<Section id="" order="13" title="" type="divider"></Section>
+	<Section id="" title="" type="divider"></Section>
 
-	<Section id="hobbies" order="14" title="Hobbies">
+	<Section id="hobbies" title="Hobbies">
 		<Content>
 			<![CDATA[
 			• Gaming (esp. uit de 90's)<br>
@@ -207,7 +207,7 @@
 		</Content>
 	</Section>
 	
-	<Section id="education" order="15" title="Onderwijs">
+	<Section id="education" title="Onderwijs">
 		<Content>
 			<![CDATA[
 			2025 – Online: “Complete Guide to Entity Framework Core”<br>
