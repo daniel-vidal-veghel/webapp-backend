@@ -13,6 +13,26 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 	private readonly string _validationDateFilePath = ContentPaths.ValidationDateFilePath(env, configuration);
 	private readonly string _errorStateFilePath = ContentPaths.ErrorStateFilePath(env, configuration);
 
+	public bool TouchContentFile(out ValidationResult? error)
+	{
+		if (!File.Exists(_siteContentFilePath))
+		{
+			_logger.LogWarning("XML file not found at {Path}", _siteContentFilePath);
+			error = new ValidationResult
+			{
+				Id = "error",
+				Order = 1,
+				Title = "XML file not found",
+				Description = "XML file not found.",
+				Html = $"XML file not found at expected folder"
+			};
+			return false;
+		}
+
+		error = null;
+		return true;
+	}
+	
 	public List<ContentSection> ReadSiteContent() => ParseSectionsFromFile(_siteContentFilePath);
 	public List<ContentSection> ReadErrorState() => ParseSectionsFromFile(_errorStateFilePath);
 	public bool ErrorStateExists() => File.Exists(_errorStateFilePath);
@@ -140,6 +160,7 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 
 	private List<ContentSection> ParseSectionsFromFile(string filePath)
 	{
+		// This a failsafe for when reading error-state. Shouldn't really happen.
 		if (!File.Exists(filePath))
 		{
 			_logger.LogWarning("Content XML file not found at {Path}", filePath);
@@ -172,7 +193,17 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		catch (Exception ex)
 		{
 			_logger.LogError(ex, "Failed to read/parse content XML file at {Path}", filePath);
-			return new List<ContentSection>();
+			return new List<ContentSection>()
+			{
+				new ValidationResult
+				{
+					Id = "error",
+					Order = 1,
+					Title = "Failed to parse XML file.",
+					Description = "Failed to parse XML file.",
+					Html = ""
+				}
+			};
 		}
 	}
 

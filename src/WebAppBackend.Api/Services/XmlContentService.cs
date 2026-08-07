@@ -53,6 +53,10 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 		if (file.ErrorStateExists())
 			return file.ReadErrorState();
 
+		// If the file somehow goes missing, while there is a validation-date present, then the next comparison is falsely true.
+		if (!file.TouchContentFile(out ValidationResult? error)) 
+			return new List<ValidationResult>() { error!};
+
 		if (file.ValidationDate() >= file.ContentXmlLastModified()) // Validated after the last time the content was modified = OK!
 			return file.ReadSiteContent();
 
@@ -66,7 +70,7 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 
 		// log and return an list with a single error section, so the site can still render something. Do not render unvalidated content.
 		_logger.LogError("Could not resolve content validation state even after revalidating.");
-		return new List<ContentSection>
+		return new List<ValidationResult>
 		{
 			new ValidationResult
 			{

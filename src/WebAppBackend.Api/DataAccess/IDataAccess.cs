@@ -2,6 +2,7 @@
 namespace WebAppBackend.Api.DataAccess;
 public interface IDataAccess
 {
+	bool TouchContentFile(out ValidationResult? error);
 	List<ContentSection> ReadSiteContent();
 	List<ContentSection> ReadErrorState();
 	bool ErrorStateExists();
