@@ -53,7 +53,7 @@ namespace WebAppBackend.Api.Validation
 					{
 						errorState.Add(new ValidationResult
 						{
-							Id = "error_"+ errorState.Count + 1,
+							Id = "error_" + (errorState.Count + 1),
 							Order = errorState.Count + 1,
 							Title = $"Section nr {section.Order} Divider has Id!",
 							Description = $"Section number {section.Order} is a Divider but has an Id attribute: '{section.Id}'",
@@ -84,7 +84,7 @@ namespace WebAppBackend.Api.Validation
 			{
 				errorState.Add(new ValidationResult
 				{
-					Id = "error_" + errorState.Count + 1,
+					Id = "error_" + (errorState.Count + 1),
 					Order = errorState.Count + 1,
 					Title = $"Section nr {section.Order} missing '{thisAttributeName}'",
 					Description = $"Section number {section.Order}{insert}: is missing the {thisAttributeName} attribute.",
@@ -95,7 +95,7 @@ namespace WebAppBackend.Api.Validation
 			{
 				errorState.Add(new ValidationResult
 				{
-					Id = "error_" + errorState.Count + 1,
+					Id = "error_" + (errorState.Count + 1),
 					Order = errorState.Count + 1,
 					Title = $"Section nr {section.Order} empty '{thisAttributeName}'",
 					Description = $"Section number {section.Order}{insert}: has an empty {thisAttributeName} attribute.",
@@ -106,7 +106,7 @@ namespace WebAppBackend.Api.Validation
 			{
 				errorState.Add(new ValidationResult
 				{
-					Id = "error_" + errorState.Count + 1,
+					Id = "error_" + (errorState.Count + 1),
 					Order = errorState.Count + 1,
 					Title = $"Section nr {section.Order} duplicate '{thisAttributeName}'",
 					Description = $"Section number {section.Order}{insert}: has a duplicate {thisAttributeName} attribute: '{thisValue}'",
