@@ -1,4 +1,3 @@
-global using ValidationResult = WebAppBackend.Api.Models.ContentSection;
 using System.Text.Json.Serialization;
 
 namespace WebAppBackend.Api.Models;
@@ -47,4 +46,18 @@ public class ContentSection
 		Expansion,
 		Header,
 	}
+
+}
+
+/// <summary> Alias class for better readability. ValidationResults are the output of the validation process, and are written to error-state.xml.
+/// </summary>
+/// <remarks> ContentSections are meant to flexible, today and in the future. That's why there's a validation process.<br/>
+/// ValidationResults, on the other hand, are hard coded ad-hoc. To prevent accidental bugs, all fields are required.</remarks>
+public class ValidationResult : ContentSection
+{
+	new public required string Id { get; set; }
+	new public required int Order { get; set; }
+	new public required string Description { get; set; }
+	new public required string Title { get; set; }
+	new public required string Html { get; set; }
 }
