@@ -1,75 +1,81 @@
-using System.Xml.Linq;
+using WebAppBackend.Api.DataAccess;
 using WebAppBackend.Api.Models;
+using WebAppBackend.Api.Validation;
 
 namespace WebAppBackend.Api.Services;
 
+#region Documentation
 /// <summary>
-/// Reads the site content from a local, uncompiled XML file every time
-/// <see cref="GetSections"/> is called. 
+/// Reads the site content from a local, uncompiled XML file.
 /// <br/>
 /// Expected XML shape:<br/>
 /// &lt;Site&gt;<br/>
-/// &lt;Section id="intro" order="1" title="Introduction"&gt;<br/>
+/// &lt;Section id="intro" title="Introduction"&gt;<br/>
 /// &lt;Content&gt;&lt;![CDATA[ &lt;p&gt;Some HTML markup...&lt;/p&gt; ]]&gt;&lt;/Content&gt;<br/>
 /// &lt;/Section&gt;<br/>
-/// ...<br/>
 /// &lt;/Site&gt;<br/>
+/// <br/>
+/// WorkFlow:
+/// <br/>
+/// - If error-state.xml exists, prior validation failed. Return error-state instead.
+/// <br/>
+/// - Else, if validation-date's timestamp is newer than
+///   site-content's last-write time, that file hasn't been modified after validation. Return that. This is the standard behavior.
+/// <br/>
+/// - Otherwise, validation is missing or stale. Validate and retry. 
 /// </summary>
-public class XmlContentService : IContentService
+#endregion
+public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess dataAccess, IContentValidator contentValidator) : IContentService
 {
-	private readonly ILogger<XmlContentService> _logger;
-	private readonly string _xmlFilePath;
+	private readonly ILogger<XmlContentService> _logger = logger;
+	private readonly IDataAccess file = dataAccess;
+	private readonly IContentValidator validator = contentValidator;
 
-	public XmlContentService(ILogger<XmlContentService> logger, IWebHostEnvironment env, IConfiguration configuration)
+	// from startup, one time only.
+	public bool InitValidation(out string? errorMessage)
 	{
-		_logger = logger;
+		var sections = file.ReadSiteContent();
 
-		// The path can be overridden via appsettings.json ("ContentSettings:XmlFilePath"),
-		// otherwise it defaults to Content/site-content.xml next to the app.
-		var configuredPath = configuration["ContentSettings:XmlFilePath"];
-
-		_xmlFilePath = string.IsNullOrWhiteSpace(configuredPath)
-			? Path.Combine(env.ContentRootPath, "Content", "site-content.xml")
-			: Path.IsPathRooted(configuredPath)
-				? configuredPath
-				: Path.Combine(env.ContentRootPath, configuredPath);
+		if (validator.TryValidate(sections, out ValidationResult? criticalError))
+		{
+			errorMessage = null;
+			return true;
+		}
+		else
+		{
+			errorMessage = criticalError?.Html ?? "Unknown error: XmlContentService.InitValidation()";
+			return false;
+		}
 	}
-
-	public IReadOnlyList<ContentSection> GetSections()
+	
+	public IReadOnlyList<ContentSection> GetSections(bool fromWeb)
 	{
-		if (!File.Exists(_xmlFilePath))
+		if (file.ErrorStateExists())
+			return file.ReadErrorState();
+
+		if (file.ValidationDate() >= file.ContentXmlLastModified()) // Validated after the last time the content was modified = OK!
+			return file.ReadSiteContent();
+
+		if (fromWeb == true) // not relooped.
 		{
-			_logger.LogWarning("Content XML file not found at {Path}", _xmlFilePath);
-			return Array.Empty<ContentSection>();
+			var sections = file.ReadSiteContent();
+			return validator.TryValidate(sections, out var criticalError)
+				? GetSections(false) // depth-limited: never loop more than once
+				: new List<ValidationResult>() { criticalError! };
 		}
 
-		try
+		// log and return an list with a single error section, so the site can still render something. Do not render unvalidated content.
+		_logger.LogError("Could not resolve content validation state even after revalidating.");
+		return new List<ContentSection>
 		{
-			// FileShare.ReadWrite lets someone edit/save the XML file in another
-			// program (e.g. Notepad) on Windows without the read here throwing
-			// an IOException because the file is "in use".
-			using var stream = new FileStream(_xmlFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-			var document = XDocument.Load(stream, LoadOptions.None);
-
-			var sections = document.Root?
-				.Elements("Section")
-				.Select((element, index) => new ContentSection
-				{
-					Id = (string?)element.Attribute("id"),
-					Title = (string?)element.Attribute("title"),
-					Description = (string?)element.Attribute("description"), // null is fine.
-					Order = index + 1, // Avoid falsy 0-based order; start at 1.
-					Html = (element.Element("Content")?.Value ?? string.Empty).Trim(),
-					Type = ContentSection.TextToType((string?)element.Attribute("type"))
-				})
-				.ToList();
-
-			return sections ?? new List<ContentSection>();
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError(ex, "Failed to read/parse content XML file at {Path}", _xmlFilePath);
-			return Array.Empty<ContentSection>();
-		}
+			new ValidationResult
+			{
+				Id = "error",
+				Order = 1,
+				Title = "Error",
+				Html = "<p>There was an error loading the site content. Please contact the site administrator.</p>",
+				Description = "Critical error: revalidation failed."
+			}
+		};
 	}
 }

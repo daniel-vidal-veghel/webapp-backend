@@ -23,7 +23,7 @@ public class ContentController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<ContentSection>), StatusCodes.Status200OK)]
     public ActionResult<IReadOnlyList<ContentSection>> Get()
     {
-        var sections = _contentService.GetSections();
+        var sections = _contentService.GetSections(true);
 #if DEBUG
         Console.WriteLine($"{DateTime.Now} - fetched: {sections}");
 #endif
