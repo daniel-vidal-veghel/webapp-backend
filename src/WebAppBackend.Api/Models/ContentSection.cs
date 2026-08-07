@@ -1,3 +1,4 @@
+global using ValidationResult = WebAppBackend.Api.Models.ContentSection;
 using System.Text.Json.Serialization;
 
 namespace WebAppBackend.Api.Models;
@@ -7,9 +8,7 @@ namespace WebAppBackend.Api.Models;
 /// </summary>
 public class ContentSection
 {
-	/// <summary>
-	/// Stable identifier used for deep-linking / scrolling.
-	/// </summary>
+	/// <summary> Stable identifier used for deep-linking / scrolling. </summary>
 	public string? Id { get; set; } = string.Empty;
 
 	/// <summary> Sequence number. </summary>
@@ -37,15 +36,15 @@ public class ContentSection
 			? result
 			: SectionType.Expansion;
 	}
-}
 
-/// <summary> Type of section.
-/// Default are expansion panels.
-/// Header is a &lt;H1&gt;.
-/// Divider is a splitting line with no text. </summary>
-public enum SectionType
-{
-	Divider,
-	Expansion,
-	Header,
+	/// <summary> Type of section.
+	/// Default are expansion panels.
+	/// Header is a &lt;H1&gt;.
+	/// Divider is a splitting line with no text. </summary>
+	public enum SectionType
+	{
+		Divider,
+		Expansion,
+		Header,
+	}
 }
