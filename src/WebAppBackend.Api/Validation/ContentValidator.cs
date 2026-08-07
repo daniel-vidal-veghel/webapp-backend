@@ -1,26 +1,47 @@
-﻿using WebAppBackend.Api.Models;
-
+﻿using WebAppBackend.Api.DataAccess;
+using WebAppBackend.Api.Models;
 namespace WebAppBackend.Api.Validation
 {
-	public class ContentValidator
+	public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 	{
-		public List<ContentSection> Validate(List<ContentSection>? sections )
+		private readonly IDataAccess file = dataAccess;
+
+		///<summary>Takes a series of <see cref="ContentSection"/> and validates them. Errors found in the XML file are saved to error-state.xml in the same folder as the site-content.xml file. <br/>
+		///If no content errors are found, a timestamp is saved to validation-date.xml</summary>
+		///<returns>True if the validation process succeeded. False if an IO writing failure occurred.</returns>
+		
+		public bool TryValidate(List<ContentSection>? sections, out ValidationResult? criticalError)
 		{
-			List<ContentSection> errorState = new List<ContentSection>();
+			List<ValidationResult> errorState = new List<ValidationResult>();
 			HashSet<string> ids = new HashSet<string>();
 			HashSet<string> titles = new HashSet<string>();
 
+			if (!ClearValidation())
+			{
+				// Not being able to write to disk is a critical failure, validation aborted. 
+				criticalError = new ValidationResult
+				{
+					Id = "error",
+					Order = 1,
+					Title = "Validation state / date could not be cleared",
+					Description = "Either validation-state or validation-date could not be cleared. This may indicate a file system permission issue.",
+					Html = "The validation state could not be cleared. This may indicate a file system permission issue. Check log."
+				};
+				return false;
+			}
+
 			if (sections == null || sections.Count == 0)
 			{
-				errorState.Add(
-				new ContentSection
+				errorState.Add(new ValidationResult
 				{
+					Id = "error",
 					Order = 1,
 					Title = "No sections found",
 					Description = "The content has no sections defined.",
 					Html = "The content has no sections defined."
 				});
-				return errorState;
+				// Nothing else to validate, save and return.
+				return TryStoreValidation(errorState, out criticalError);
 			}
 
 			foreach (var section in sections)
@@ -30,8 +51,9 @@ namespace WebAppBackend.Api.Validation
 				{
 					if (!string.IsNullOrEmpty(section.Id))
 					{
-						errorState.Add(new ContentSection
+						errorState.Add(new ValidationResult
 						{
+							Id = "error_"+ errorState.Count + 1,
 							Order = errorState.Count + 1,
 							Title = $"Section nr {section.Order} Divider has Id!",
 							Description = $"Section number {section.Order} is a Divider but has an Id attribute: '{section.Id}'",
@@ -44,30 +66,25 @@ namespace WebAppBackend.Api.Validation
 					ValidateAttribute(section, section.Id, nameof(ContentSection.Id), section.Title, nameof(ContentSection.Title), ids, errorState);
 					ValidateAttribute(section, section.Title, nameof(ContentSection.Title), section.Id, nameof(ContentSection.Id), titles, errorState);
 				}
-
 			}
-			return errorState;
+
+			return TryStoreValidation(errorState, out criticalError);
 		}
 
 		/// <summary>
 		/// Checks the presence / uniqueness of either Id or Title attributes. Uses the other attribute for reference in the error message.
 		/// </summary>
-		private void ValidateAttribute(
-			ContentSection section,
-			string? thisValue,
-			string thisAttributeName,
-			string? otherAttributeValue,
-			string otherAttributeName,
-			HashSet<string> seenValues,
-			List<ContentSection> errorState)
+		private static void ValidateAttribute(ContentSection section, string? thisValue, string thisAttributeName,
+			string? otherAttributeValue, string otherAttributeName,HashSet<string> seenValues,List<ValidationResult> errorState)
 		{
 			string insert = string.IsNullOrWhiteSpace(otherAttributeValue) ? "" : $" - {otherAttributeName}: '{otherAttributeValue}'";
 			string additionalInfo = insert + (string.IsNullOrWhiteSpace(section.Description) ? "" : $", description: '{section.Description}'");
 
 			if (thisValue == null) // null means the attribute isn't just empty, it's not there.
 			{
-				errorState.Add(new ContentSection
+				errorState.Add(new ValidationResult
 				{
+					Id = "error_" + errorState.Count + 1,
 					Order = errorState.Count + 1,
 					Title = $"Section nr {section.Order} missing '{thisAttributeName}'",
 					Description = $"Section number {section.Order}{insert}: is missing the {thisAttributeName} attribute.",
@@ -76,8 +93,9 @@ namespace WebAppBackend.Api.Validation
 			}
 			else if (string.IsNullOrWhiteSpace(thisValue))
 			{
-				errorState.Add(new ContentSection
+				errorState.Add(new ValidationResult
 				{
+					Id = "error_" + errorState.Count + 1,
 					Order = errorState.Count + 1,
 					Title = $"Section nr {section.Order} empty '{thisAttributeName}'",
 					Description = $"Section number {section.Order}{insert}: has an empty {thisAttributeName} attribute.",
@@ -86,8 +104,9 @@ namespace WebAppBackend.Api.Validation
 			}
 			else if (!seenValues.Add(thisValue))
 			{
-				errorState.Add(new ContentSection
+				errorState.Add(new ValidationResult
 				{
+					Id = "error_" + errorState.Count + 1,
 					Order = errorState.Count + 1,
 					Title = $"Section nr {section.Order} duplicate '{thisAttributeName}'",
 					Description = $"Section number {section.Order}{insert}: has a duplicate {thisAttributeName} attribute: '{thisValue}'",
@@ -95,5 +114,50 @@ namespace WebAppBackend.Api.Validation
 				});
 			}
 		}
+
+		/// <summary> Save the current validation state to disk. Validation errors are visible simply by browsing the site / pressing F5. </summary>
+		/// <remarks> Writing to disk is a critical failure, and renders xml validation pointless. The rest of the validation will be dumped, and the
+		/// error will be immediately returned to the user. </remarks>
+		private bool TryStoreValidation(List<ValidationResult> errorState, out ValidationResult? criticalError)
+		{
+			bool contentOK = errorState.Count == 0;
+			bool saveOK = contentOK
+				? file.WriteValidationDate(DateTime.Now.ToUniversalTime())
+				: file.WriteErrorState(errorState);
+
+			if (saveOK)
+			{
+				criticalError = null;
+				return true;
+			}
+
+			criticalError = contentOK
+				? new ValidationResult
+				{
+					Id = "error",
+					Order = 1,
+					Title = "Couldn't write validation-date.xml",
+					Description = "Failed to write validation-date.xml to disk.",
+					Html = "Failed to write validation-date to disk.<br> Check Log. Check directory for permissions / conflicts. Check File for illegal characters."
+				} 
+				: new ValidationResult
+				{
+					Id = "error",
+					Order = 1,
+					Title = "Couldn't write error-state.xml",
+					Description = "Failed to write error-state.xml to disk.",
+					Html = "Failed to write error-state to disk.<br> Check Log. Check directory for permissions / conflicts. Check File for illegal characters."
+				};
+
+			return false;
+		}
+
+		private bool ClearValidation()
+		{
+			bool errorStateCleared = file.DeleteErrorState();
+			bool validationDateCleared = file.DeleteValidationDate();
+			return errorStateCleared && validationDateCleared;
+		}
+
 	}
 }
