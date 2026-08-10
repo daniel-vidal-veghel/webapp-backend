@@ -8,6 +8,7 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 
 	///<summary>Takes a series of <see cref="ContentSection"/> and validates them. Errors found in the XML file are saved to error-state.xml in the same folder as the site-content.xml file. <br/>
 	///If no content errors are found, a timestamp is saved to validation-date.xml</summary>
+	///<remarks>This method accepts ContentSections and will out ValidationResults. To prevent bad routing, it throws if it detects ValidationResults in sections (only during development)</remarks>
 	///<returns>True if the validation process succeeded. False if an IO writing failure occurred.</returns>
 	
 	public bool TryValidate(IReadOnlyList<ContentSection> sections, out ValidationResult? criticalError)
@@ -44,21 +45,10 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 			return TryStoreValidation(errorState, out criticalError);
 		}
 
-		// Somewhere, we got a validation results instead of sections. Skip validation, save results.
+#if DEBUG // Won't happen from changing the XML, might happen during development: bad routing.
 		if (sections.Any(x => x.GetType() == typeof(ValidationResult)))
-		{
-			return TryStoreValidation(
-				sections
-				.Where(x => x.GetType() == typeof(ValidationResult))
-				.Select(x=>new ValidationResult()
-				{	Id = x.Id!,
-					Order = x.Order!,
-					Title = x.Title!,
-					Description = x.Description!,
-					Html = x.Html!
-				})
-				.ToList(), out criticalError);
-		}
+			throw new ArgumentException("Bad Routing: sections argument must not contain ValidationResults!", nameof(sections));
+#endif
 
 		foreach (var section in sections)
 		{

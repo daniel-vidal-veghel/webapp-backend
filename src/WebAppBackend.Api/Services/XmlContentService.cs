@@ -58,7 +58,6 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 		if (file.ErrorStateExists())
 			return GetFile(ContentType.ErrorState);
 
-		// If the file somehow goes missing, while there is a validation-date present, then the next comparison is falsely true.
 		if (!file.TouchContentFile(out ValidationResult? error)) 
 			return new List<ValidationResult>() { error!};
 
@@ -67,8 +66,11 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 
 		if (fromWeb == true) // not relooped.
 		{
-			var sections = GetFile(ContentType.SiteContent);
-			return validator.TryValidate(sections, out var criticalValidationError) // TryValidate will eat ValidationResults just fine.
+			var sections = file.ReadSiteContent(out var criticalError);
+			if (criticalError != null)
+				return criticalError;
+
+			return validator.TryValidate(sections, out var criticalValidationError)
 				? GetSections(false) // depth-limited: never loop more than once
 				: new List<ValidationResult>() { criticalValidationError! };
 		}
