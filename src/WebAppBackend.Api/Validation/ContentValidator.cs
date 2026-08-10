@@ -86,7 +86,7 @@ namespace WebAppBackend.Api.Validation
 				{
 					Id = "error_" + (errorState.Count + 1),
 					Order = errorState.Count + 1,
-					Title = $"Section nr {section.Order} missing '{thisAttributeName}'",
+					Title = $"Section nr {section.Order} missing {thisAttributeName}",
 					Description = $"Section number {section.Order}{insert}: is missing the {thisAttributeName} attribute.",
 					Html = $$"""Section number {{section.Order}}: {{additionalInfo}}"""
 				});
@@ -97,18 +97,18 @@ namespace WebAppBackend.Api.Validation
 				{
 					Id = "error_" + (errorState.Count + 1),
 					Order = errorState.Count + 1,
-					Title = $"Section nr {section.Order} empty '{thisAttributeName}'",
+					Title = $"Section nr {section.Order} empty {thisAttributeName}",
 					Description = $"Section number {section.Order}{insert}: has an empty {thisAttributeName} attribute.",
 					Html = $$"""Section number {{section.Order}}: {{additionalInfo}}"""
 				});
 			}
-			else if (!seenValues.Add(thisValue))
+			else if (!seenValues.Add(thisValue.ToLowerInvariant()))
 			{
 				errorState.Add(new ValidationResult
 				{
 					Id = "error_" + (errorState.Count + 1),
 					Order = errorState.Count + 1,
-					Title = $"Section nr {section.Order} duplicate '{thisAttributeName}'",
+					Title = $"Section nr {section.Order} duplicate {thisAttributeName}",
 					Description = $"Section number {section.Order}{insert}: has a duplicate {thisAttributeName} attribute: '{thisValue}'",
 					Html = $$"""Section number {{section.Order}}: {{additionalInfo}}"""
 				});

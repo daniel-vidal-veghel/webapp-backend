@@ -193,17 +193,18 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		catch (Exception ex)
 		{
 			_logger.LogError(ex, "Failed to read/parse content XML file at {Path}", filePath);
-			return new List<ContentSection>()
+			ContentSection error = new ValidationResult()
 			{
-				new ValidationResult
-				{
-					Id = "error",
-					Order = 1,
-					Title = "Failed to parse XML file.",
-					Description = "Failed to parse XML file.",
-					Html = ""
-				}
+				Id = "error",
+				Order = 1,
+				Title = "Failed to parse XML file.",
+				Description = "Failed to parse XML file.",
+				Html = ""
+
 			};
+			//FIXME is there a way to return a ValidationResult?
+			return new List<ContentSection> (){ error };
+			
 		}
 	}
 
