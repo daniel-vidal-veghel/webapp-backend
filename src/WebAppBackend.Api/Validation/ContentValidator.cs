@@ -10,7 +10,7 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 	///If no content errors are found, a timestamp is saved to validation-date.xml</summary>
 	///<returns>True if the validation process succeeded. False if an IO writing failure occurred.</returns>
 	
-	public bool TryValidate(List<ContentSection>? sections, out ValidationResult? criticalError)
+	public bool TryValidate(IReadOnlyList<ContentSection> sections, out ValidationResult? criticalError)
 	{
 		List<ValidationResult> errorState = new List<ValidationResult>();
 		HashSet<string> ids = new HashSet<string>();

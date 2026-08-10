@@ -3,5 +3,5 @@
 namespace WebAppBackend.Api.Validation;
 public interface IContentValidator
 {
-	bool TryValidate(List<ContentSection>? sections, out ValidationResult? criticalError);
+	bool TryValidate(IReadOnlyList<ContentSection> sections, out ValidationResult? criticalError);
 }
