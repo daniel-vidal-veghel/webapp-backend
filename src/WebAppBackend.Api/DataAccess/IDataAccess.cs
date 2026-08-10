@@ -3,8 +3,8 @@ namespace WebAppBackend.Api.DataAccess;
 public interface IDataAccess
 {
 	bool TouchContentFile(out ValidationResult? error);
-	List<ContentSection> ReadSiteContent();
-	List<ContentSection> ReadErrorState();
+	List<ContentSection> ReadSiteContent(out List<ValidationResult>? criticalError);
+	List<ContentSection> ReadErrorState(out List<ValidationResult>? criticalError);
 	bool ErrorStateExists();
 	DateTime? ValidationDate();
 	DateTime? ContentXmlLastModified();

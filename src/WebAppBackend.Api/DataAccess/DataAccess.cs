@@ -33,8 +33,8 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		return true;
 	}
 	
-	public List<ContentSection> ReadSiteContent() => ParseSectionsFromFile(_siteContentFilePath);
-	public List<ContentSection> ReadErrorState() => ParseSectionsFromFile(_errorStateFilePath);
+	public List<ContentSection> ReadSiteContent(out List<ValidationResult>? criticalError) => ParseSectionsFromFile(_siteContentFilePath, out criticalError);
+	public List<ContentSection> ReadErrorState(out List<ValidationResult>? criticalError) => ParseSectionsFromFile(_errorStateFilePath, out criticalError);
 	public bool ErrorStateExists() => File.Exists(_errorStateFilePath);
 
 	public bool DeleteErrorState()
@@ -158,12 +158,21 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		return false;
 	}
 
-	private List<ContentSection> ParseSectionsFromFile(string filePath)
+	private List<ContentSection> ParseSectionsFromFile(string filePath, out List<ValidationResult>? criticalError)
 	{
 		// This a failsafe for when reading error-state. Shouldn't really happen.
 		if (!File.Exists(filePath))
 		{
 			_logger.LogWarning("Content XML file not found at {Path}", filePath);
+			var error = new ValidationResult()
+			{
+				Id = "error",
+				Order = 1,
+				Title = "File not found.",
+				Description = "Could not find xml file at expected location.",
+				Html = ""
+			};
+			criticalError = new List<ValidationResult> { error };
 			return new List<ContentSection>();
 		}
 
@@ -187,24 +196,23 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 					Type = ContentSection.TextToType((string?)element.Attribute("type"))
 				})
 				.ToList();
-
+			criticalError = null;
 			return sections ?? new List<ContentSection>();
 		}
 		catch (Exception ex)
 		{
 			_logger.LogError(ex, "Failed to read/parse content XML file at {Path}", filePath);
-			ContentSection error = new ValidationResult()
+			
+			var error = new ValidationResult()
 			{
 				Id = "error",
 				Order = 1,
 				Title = "Failed to parse XML file.",
 				Description = "Failed to parse XML file.",
 				Html = ""
-
 			};
-			//FIXME is there a way to return a ValidationResult?
-			return new List<ContentSection> (){ error };
-			
+			criticalError = new List<ValidationResult> { error };
+			return new List<ContentSection>();
 		}
 	}
 
