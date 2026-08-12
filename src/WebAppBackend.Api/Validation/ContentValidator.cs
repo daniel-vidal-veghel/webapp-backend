@@ -83,7 +83,7 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 	private static void ValidateAttribute(ContentSection section, string? thisValue, string thisAttributeName,
 		string? otherAttributeValue, string otherAttributeName,HashSet<string> seenValues,List<ValidationResult> errorState)
 	{
-		string insert = string.IsNullOrWhiteSpace(otherAttributeValue) ? "" : $" - {otherAttributeName}: '{otherAttributeValue}'";
+		string insert = string.IsNullOrWhiteSpace(otherAttributeValue) ? "" : $", {otherAttributeName}: '{otherAttributeValue}'";
 		string additionalInfo = insert + (string.IsNullOrWhiteSpace(section.Description) ? "" : $", description: '{section.Description}'");
 
 		if (thisValue == null) // null means the attribute isn't just empty, it's not there.
@@ -94,7 +94,7 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 				Order = errorState.Count + 1,
 				Title = $"Section nr {section.Order} missing {thisAttributeName}",
 				Description = $"Section number {section.Order}{insert}: is missing the {thisAttributeName} attribute.",
-				Html = $$"""Section number {{section.Order}}: {{additionalInfo}}"""
+				Html = $$"""Section number {{section.Order}}{{additionalInfo}}"""
 			});
 		}
 		else if (string.IsNullOrWhiteSpace(thisValue))
@@ -105,7 +105,7 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 				Order = errorState.Count + 1,
 				Title = $"Section nr {section.Order} empty {thisAttributeName}",
 				Description = $"Section number {section.Order}{insert}: has an empty {thisAttributeName} attribute.",
-				Html = $$"""Section number {{section.Order}}: {{additionalInfo}}"""
+				Html = $$"""Section number {{section.Order}}{{additionalInfo}}"""
 			});
 		}
 		else if (!seenValues.Add(thisValue.ToLowerInvariant()))
@@ -116,7 +116,7 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 				Order = errorState.Count + 1,
 				Title = $"Section nr {section.Order} duplicate {thisAttributeName}",
 				Description = $"Section number {section.Order}{insert}: has a duplicate {thisAttributeName} attribute: '{thisValue}'",
-				Html = $$"""Section number {{section.Order}}: {{additionalInfo}}"""
+				Html = $$"""Section number {{section.Order}}{{additionalInfo}}"""
 			});
 		}
 	}
