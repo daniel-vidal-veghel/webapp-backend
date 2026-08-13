@@ -78,7 +78,7 @@ public class Tests
 
 	[Theory]
 	[MemberData(nameof(_WriteFailureTestData))]
-	public void TryValidate_WriteErrorStateFails(bool WESS, bool WVDS, ContentSection data, ValidationResult predictedError)
+	public void TryValidate_TryStoreValidationFails(bool WESS, bool WVDS, ContentSection data, ValidationResult predictedError)
 	{
 		var dataAccess = new FakeDataAccess { WriteErrorStateSucceeds = WESS, WriteValidationDateSucceeds = WVDS };
 		var validator = new ContentValidator(dataAccess);
