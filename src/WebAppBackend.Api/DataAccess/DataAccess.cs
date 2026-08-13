@@ -24,7 +24,7 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 				Order = 1,
 				Title = "XML file not found",
 				Description = "XML file not found.",
-				Html = $"XML file not found at expected folder. TouchContentFile failed."
+				Html = $"TouchContentFile"
 			};
 			return false;
 		}
