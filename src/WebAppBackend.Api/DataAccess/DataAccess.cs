@@ -24,7 +24,7 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 				Order = 1,
 				Title = "XML file not found",
 				Description = "XML file not found.",
-				Html = $"XML file not found at expected folder"
+				Html = $"XML file not found at expected folder. TouchContentFile failed."
 			};
 			return false;
 		}
@@ -170,7 +170,7 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 				Order = 1,
 				Title = "File not found.",
 				Description = "Could not find xml file at expected location.",
-				Html = ""
+				Html = "ParseSectionsFromFile"
 			};
 			criticalError = new List<ValidationResult> { error };
 			return new List<ContentSection>();
@@ -209,7 +209,7 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 				Order = 1,
 				Title = "Failed to parse XML file.",
 				Description = "Failed to parse XML file.",
-				Html = ""
+				Html = "ParseSectionsFromFile"
 			};
 			criticalError = new List<ValidationResult> { error };
 			return new List<ContentSection>();
