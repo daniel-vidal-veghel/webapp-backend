@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Site>
 	<Section id="personalia" title="Persoonlijke gegevens">
-		<Content><![CDATA[
+		<Content>
+			<![CDATA[
 			Naam: Daniel Vidal<br>
 			Woonplaats: Meierijstad, Nederland<br>
 			E-mail: daniel.v1d47@gmail.com<br>
 			Rijbewijs & eigen auto: Ja<br>
+			Github: <a href="https://github.com/daniel-vidal-veghel/" target="_blank" rel="noopener noreferrer">hier</a>
 		]]></Content>
 	</Section>
 	
