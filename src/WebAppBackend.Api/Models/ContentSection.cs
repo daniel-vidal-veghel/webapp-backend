@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace WebAppBackend.Api.Models;
@@ -23,7 +24,7 @@ public class ContentSection
 	/// <summary> Raw (X)HTML markup for the body of the panel, taken verbatim from the XML file's &lt;Content&gt; element wrapped in CDATA. </summary>
 	public virtual string Html { get; set; } = string.Empty;
 
-	[JsonConverter(typeof(JsonStringEnumConverter))]
+	[JsonConverter(typeof(CamelCaseStringEnumConverter))]
 	public SectionType Type { get; set; } = SectionType.Expansion;
 
 	public static SectionType TextToType(string? xmlAttribute)
@@ -43,5 +44,5 @@ public class ContentSection
 		Expansion,
 		Header,
 	}
-
+	public class CamelCaseStringEnumConverter() : JsonStringEnumConverter(JsonNamingPolicy.CamelCase) { }
 }
