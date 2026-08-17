@@ -43,6 +43,7 @@ public class ContentSection
 		Divider,
 		Expansion,
 		Header,
+		Setup,
 	}
 	public class CamelCaseStringEnumConverter() : JsonStringEnumConverter(JsonNamingPolicy.CamelCase) { }
 }
