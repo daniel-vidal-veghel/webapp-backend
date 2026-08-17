@@ -17,6 +17,9 @@ public static class ContentPaths
 
 	public static string SiteContentFilePath(IWebHostEnvironment env, IConfiguration configuration)
 		=> Path.Combine(ContentFolderPath(env, configuration), configuration[_prefix + _contentKey] ?? _contentDefault);
+	public static string EnglishContentFilePath(IWebHostEnvironment env, IConfiguration configuration)
+		=> Path.Combine(ContentFolderPath(env, configuration), InsertLanguageSuffix(configuration[_prefix + _contentKey]!)
+			?? InsertLanguageSuffix(_contentDefault));
 
 	public static string ValidationDateFilePath(IWebHostEnvironment env, IConfiguration configuration)
 		=> Path.Combine(ContentFolderPath(env, configuration), configuration[_prefix + _validationKey] ?? _validationDefault);
@@ -37,5 +40,11 @@ public static class ContentPaths
 		{
 			throw new Exception("ContentSettings in appsettings.json is missing or incorrectly setup.");
 		}
+	}
+
+	// Only EN atm.
+	private static string InsertLanguageSuffix(string input)
+	{
+		return (input.Insert(input.IndexOf('.'), "-en"));
 	}
 }

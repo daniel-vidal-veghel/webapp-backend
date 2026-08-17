@@ -1,4 +1,5 @@
 using WebAppBackend.Api.DataAccess;
+using WebAppBackend.Api.Enums;
 using WebAppBackend.Api.Models;
 using WebAppBackend.Api.Validation;
 
@@ -34,27 +35,34 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 	// from startup, one time only.
 	public bool InitValidation(out string? errorMessage)
 	{
-		var sections = file.ReadSiteContent(out var criticalReadError);
-		if (criticalReadError != null)
+		byte _numLanguages = 2; // Dutch, English
+		// run once per language. Exclude non-language routes.
+		for (byte i = 0; i < _numLanguages; i++)
 		{
-			errorMessage = criticalReadError.FirstOrDefault()?.Description ?? "InitValidation failed to read";
-			return false;
-		}
+			var sections = file.ReadSiteContent((ContentType)i, out var criticalReadError);
+			if (criticalReadError != null)
+			{
+				errorMessage = $"{(ContentType)i}: " + (criticalReadError.FirstOrDefault()?.Description ?? "InitValidation failed to read");
+				return false;
+			}
 
-		if (validator.TryValidate(sections, out ValidationResult? criticalError))
-		{
-			errorMessage = null;
-			return true;
+			if (!validator.TryValidate(sections, out ValidationResult? criticalError))
+			{
+				errorMessage = $"{(ContentType)i}: " + (criticalError?.Description ?? "InitValidation failed to validate");
+				return false;
+			}
 		}
-		else
-		{
-			errorMessage = criticalError?.Description ?? "InitValidation failed to validate";
-			return false;
-		}
+		errorMessage = null;
+		return true;
 	}
 	
-	public IReadOnlyList<ContentSection> GetSections(bool fromWeb)
+	public IReadOnlyList<ContentSection> GetSections(bool fromWeb, string? language)
 	{
+		// Hard coded. EN or NL.
+		var contentLanguage = language == "en"
+			? ContentType.EnglishSiteContent
+			: ContentType.DutchSiteContent;
+
 		if (file.ErrorStateExists())
 			return GetFile(ContentType.ErrorState);
 
@@ -62,16 +70,16 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 			return new List<ValidationResult>() { error!};
 
 		if (file.ValidationDate() >= file.ContentXmlLastModified()) // Validated after the last time the content was modified = OK!
-			return GetFile(ContentType.SiteContent);
+			return GetFile(contentLanguage);
 
 		if (fromWeb == true) // not relooped.
 		{
-			var sections = file.ReadSiteContent(out var criticalError);
+			var sections = file.ReadSiteContent(contentLanguage, out var criticalError);
 			if (criticalError != null)
 				return criticalError;
 
 			return validator.TryValidate(sections, out var criticalValidationError)
-				? GetSections(false) // depth-limited: never loop more than once
+				? GetSections(false, language) // depth-limited: never loop more than once
 				: new List<ValidationResult>() { criticalValidationError! };
 		}
 
@@ -89,17 +97,12 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 			}
 		};
 	}
-
-	private enum ContentType { SiteContent, ErrorState };
+	
 	private IReadOnlyList<ContentSection> GetFile(ContentType ct)
 	{
-		List<ValidationResult>? criticalError; 	
-		var output = ct == ContentType.SiteContent
-			? file.ReadSiteContent(out criticalError)
-			: file.ReadErrorState(out criticalError);
-
-		return criticalError == null
-			? output
-			: criticalError;
+		var output = file.ReadSiteContent(ct, out var criticalError);
+		return criticalError != null
+			? criticalError
+			: output;
 	}
 }

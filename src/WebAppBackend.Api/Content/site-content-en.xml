@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Site>
+	<Section type="setup" title="Welcome!">
+		<Content>
+			<![CDATA[en]]>
+		</Content>
+	</Section>
+	
 	<Section id="personalia" title="Personal details">
 		<Content>
 			<![CDATA[

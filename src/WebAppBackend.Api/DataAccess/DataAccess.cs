@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Xml.Linq;
+using WebAppBackend.Api.Enums;
 using WebAppBackend.Api.Models;
 
 namespace WebAppBackend.Api.DataAccess;
@@ -10,6 +11,7 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 {
 	private readonly ILogger<DataAccess> _logger = logger;
 	private readonly string _siteContentFilePath = ContentPaths.SiteContentFilePath(env, configuration);
+	private readonly string _EnglishContentFilePath = ContentPaths.EnglishContentFilePath(env, configuration);
 	private readonly string _validationDateFilePath = ContentPaths.ValidationDateFilePath(env, configuration);
 	private readonly string _errorStateFilePath = ContentPaths.ErrorStateFilePath(env, configuration);
 
@@ -33,8 +35,20 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		return true;
 	}
 	
-	public List<ContentSection> ReadSiteContent(out List<ValidationResult>? criticalError) => ParseSectionsFromFile(_siteContentFilePath, out criticalError);
-	public List<ContentSection> ReadErrorState(out List<ValidationResult>? criticalError) => ParseSectionsFromFile(_errorStateFilePath, out criticalError);
+	public List<ContentSection> ReadSiteContent(ContentType ct, out List<ValidationResult>? criticalError)
+	{
+		switch (ct)
+		{
+			default:
+			case ContentType.DutchSiteContent:
+				return ParseSectionsFromFile(_siteContentFilePath, out criticalError);
+			case ContentType.EnglishSiteContent:
+				return ParseSectionsFromFile(_EnglishContentFilePath, out criticalError);
+			case ContentType.ErrorState:
+				return ParseSectionsFromFile(_errorStateFilePath, out criticalError);
+		}   
+	}
+	
 	public bool ErrorStateExists() => File.Exists(_errorStateFilePath);
 
 	public bool DeleteErrorState()
