@@ -4,19 +4,15 @@ namespace WebAppBackend.Api.Models
 {
 	public class ValidationDates
 	{
-		public Dictionary<byte, DateTime?> Dates { get; set; } = new Dictionary<byte, DateTime?>();
+		public Dictionary<ContentType, DateTime?> Dates { get; set; } = new Dictionary<ContentType, DateTime?>();
 
 		public bool IsContentValid(ContentType ct)
-			=> ct < ContentType.ErrorState && Dates[(byte)ct].HasValue;
+			=> ct < ContentType.DutchErrorState && Dates[ct].HasValue;
 		
 		public DateTime? GetValidationDate(ContentType ct)
-			=> ct < ContentType.ErrorState
-				? Dates[(byte)ct]
-				: null;
+			=> ct < ContentType.DutchErrorState ? Dates[ct] : null;
 
 		public DateTime? GetErrorDate(ContentType ct)
-			=> ct < ContentType.ErrorState
-				? Dates[(byte)ct]
-				: null;
+			=> ct < ContentType.DutchErrorState ? null : Dates[ct];
 	}
 }
