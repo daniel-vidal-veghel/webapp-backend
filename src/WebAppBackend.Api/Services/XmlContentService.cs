@@ -46,7 +46,7 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 				return false;
 			}
 
-			if (!validator.TryValidate(sections, out ValidationResult? criticalError))
+			if (!validator.TryValidate(sections, (ContentType)i, out ValidationResult? criticalError))
 			{
 				errorMessage = $"{(ContentType)i}: " + (criticalError?.Description ?? "InitValidation failed to validate");
 				return false;
@@ -63,13 +63,31 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 			? ContentType.EnglishSiteContent
 			: ContentType.DutchSiteContent;
 
-		if (file.ErrorStateExists())
-			return GetFile(ContentType.ErrorState);
+		var errorType = contentLanguage == ContentType.DutchSiteContent
+					? ContentType.DutchErrorState
+					: ContentType.EnglishErrorState;
 
-		if (!file.TouchContentFile(out ValidationResult? error)) 
+		ValidationDates matrix = file.GetValidationMatrix();
+		var errorDate = matrix.GetErrorDate(errorType);
+
+		if (errorDate.HasValue)
+		{
+			if (errorDate >= file.ContentXmlLastModified(contentLanguage))
+				return GetFile(errorType);
+
+			var sections = file.ReadSiteContent(contentLanguage, out var criticalReadingError);
+			if (criticalReadingError != null)
+				return criticalReadingError;
+
+			return validator.TryValidate(sections, contentLanguage, out var criticalValidationError)
+				? GetSections(false, language) // depth-limited: never loop more than once.
+				: new List<ValidationResult>() { criticalValidationError! };
+		}
+
+		if (!file.TouchFile(contentLanguage, out ValidationResult? error))
 			return new List<ValidationResult>() { error!};
 
-		if (file.ValidationDate() >= file.ContentXmlLastModified()) // Validated after the last time the content was modified = OK!
+		if (matrix.GetValidationDate(contentLanguage) >= file.ContentXmlLastModified(contentLanguage)) // Validated after the last time the content was modified = OK!
 			return GetFile(contentLanguage);
 
 		if (fromWeb == true) // not relooped.
@@ -78,7 +96,7 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 			if (criticalError != null)
 				return criticalError;
 
-			return validator.TryValidate(sections, out var criticalValidationError)
+			return validator.TryValidate(sections, contentLanguage, out var criticalValidationError)
 				? GetSections(false, language) // depth-limited: never loop more than once
 				: new List<ValidationResult>() { criticalValidationError! };
 		}
