@@ -150,24 +150,43 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 	}
 
 	/// <summary>
-	/// Writes the validation timestamp to the validation-dates.xml file.
+	/// Writes the validation and error timestamps to the validation-dates.xml file.
 	/// Has to be UTC because you don't know where a 3rd party server might be running.
 	/// </summary>
-	public bool WriteValidationDate(DateTime validatedAtUtc)
+	public bool WriteValidationDate(DateTime validatedAtUtc, ContentType ct)
 	{
+		string elementName = XmlTagFromContentType(ct);
+
 		try
 		{
-			var document = new XDocument(
+			XDocument document;
+			if (File.Exists(_validationDatesFilePath))
+			{
+				using var stream = new FileStream(_validationDatesFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+				document = XDocument.Load(stream);
+			}
+			else
+			{
+				document = new XDocument(
 				new XDeclaration("1.0", "utf-8", null),
-				new XElement("ValidationDate", validatedAtUtc.ToUniversalTime().ToString("o"))
+					new XElement("ValidationDates")
 			);
+			}
 
-			document.Save(_validationDateFilePath);
+			var root = document.Root!;
+			var value = validatedAtUtc.ToUniversalTime().ToString("o");
+			var existing = root.Element(elementName);
+			if (existing != null)
+				existing.Value = value;
+			else
+				root.Add(new XElement(elementName, value));
+
+			document.Save(_validationDatesFilePath);
 			return true;
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex, "Failed to write validation date file at {Path}", _validationDateFilePath);
+			_logger.LogError(ex, "Failed to write validation date file at {Path}", _validationDatesFilePath);
 		}
 		return false;
 	}
@@ -230,4 +249,15 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		}
 	}
 
+	private string XmlTagFromContentType(ContentType ct)
+	{
+		switch (ct)
+		{
+			case ContentType.DutchSiteContent: return "NL_Valid";
+			case ContentType.EnglishSiteContent: return "EN_Valid";
+			case ContentType.DutchErrorState: return "NL_Error";
+			case ContentType.EnglishErrorState: return "EN_Error";
+			default: throw new ArgumentOutOfRangeException();
+		}
+	}
 }

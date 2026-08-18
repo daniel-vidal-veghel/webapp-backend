@@ -11,5 +11,5 @@ public interface IDataAccess
 	bool DeleteErrorState();
 	bool DeleteValidationDate();
 	bool WriteErrorState(List<ValidationResult> errorState);
-	bool WriteValidationDate(DateTime validatedAtUtc);
+	bool WriteValidationDate(DateTime validatedAtUtc, ContentType ct);
 }
