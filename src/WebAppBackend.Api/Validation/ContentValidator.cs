@@ -1,4 +1,5 @@
 ﻿using WebAppBackend.Api.DataAccess;
+using WebAppBackend.Api.Enums;
 using WebAppBackend.Api.Models;
 namespace WebAppBackend.Api.Validation;
 
@@ -7,17 +8,17 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 	private readonly IDataAccess file = dataAccess;
 
 	///<summary>Takes a series of <see cref="ContentSection"/> and validates them. Errors found in the XML file are saved to error-state.xml in the same folder as the site-content.xml file. <br/>
-	///If no content errors are found, a timestamp is saved to validation-date.xml</summary>
+	///If no content errors are found, a timestamp is saved to validation-dates.xml</summary>
 	///<remarks>This method accepts ContentSections and will out ValidationResults. To prevent bad routing, it throws if it detects ValidationResults in sections (only during development)</remarks>
 	///<returns>True if the validation process succeeded. False if an IO writing failure occurred.</returns>
 	
-	public bool TryValidate(IReadOnlyList<ContentSection> sections, out ValidationResult? criticalError)
+	public bool TryValidate(IReadOnlyList<ContentSection> sections, ContentType ct, out ValidationResult? criticalError)
 	{
 		List<ValidationResult> errorState = new List<ValidationResult>();
 		HashSet<string> ids = new HashSet<string>();
 		HashSet<string> titles = new HashSet<string>();
 
-		if (!ClearValidation())
+		if (!ClearValidation(ct))
 		{
 			// Not being able to write to disk is a critical failure, validation aborted. 
 			criticalError = new ValidationResult
@@ -25,7 +26,7 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 				Id = "error",
 				Order = 1,
 				Title = "Validation state / date could not be cleared",
-				Description = "Either validation-state or validation-date could not be cleared. This may indicate a file system permission issue.",
+				Description = "Either validation-state or validation-dates could not be cleared. This may indicate a file system permission issue.",
 				Html = "The validation state could not be cleared. This may indicate a file system permission issue. Check log."
 			};
 			return false;
@@ -42,7 +43,7 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 				Html = "The content has no sections defined."
 			});
 			// Nothing else to validate, save and return.
-			return TryStoreValidation(errorState, out criticalError);
+			return TryStoreValidation(errorState, ct, out criticalError);
 		}
 
 #if DEBUG // Won't happen from changing the XML, might happen during development: bad routing.
@@ -51,7 +52,7 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 #endif
 
 		// First element of a content xml is always a setup section.
-		if (sections.First().Type != ContentSection.SectionType.Setup)
+		if (sections[0].Type != ContentSection.SectionType.Setup)
 		{
 			errorState.Add(new ValidationResult
 			{
@@ -75,9 +76,9 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 					{
 						Id = "error_" + (errorState.Count + 1),
 						Order = errorState.Count + 1,
-						Title = $"Section nr {section.Order} Divider has Id!",
+						Title = $"Section nr {section.Order} {section.Type} has Id!",
 						Description = $"Section number {section.Order} is a {section.Type} but has an Id attribute: '{section.Id}'",
-						Html = $$"""Section number {{section.Order}} is a {section.Type} but has an Id attribute: '{{section.Id}}'"""
+						Html = $$"""Section number {{section.Order}} is a {{section.Type}} but has an Id attribute: '{{section.Id}}'"""
 					});
 				}
 
@@ -100,7 +101,7 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 			}
 		}
 
-		return TryStoreValidation(errorState, out criticalError);
+		return TryStoreValidation(errorState, ct, out criticalError);
 	}
 
 	/// <summary>
@@ -150,12 +151,22 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 	/// <summary> Save the current validation state to disk. Validation errors are visible simply by browsing the site / pressing F5. </summary>
 	/// <remarks> Writing to disk is a critical failure, and renders xml validation pointless. The rest of the validation will be dumped, and the
 	/// error will be immediately returned to the user. </remarks>
-	private bool TryStoreValidation(List<ValidationResult> errorState, out ValidationResult? criticalError)
+	private bool TryStoreValidation(List<ValidationResult> errorState, ContentType ct, out ValidationResult? criticalError)
 	{
+		if (ct == ContentType.DutchErrorState || ct ==ContentType.EnglishErrorState)
+			throw new ArgumentOutOfRangeException(nameof(ct));
+
 		bool contentOK = errorState.Count == 0;
+
+		ct = !contentOK// Convert ct to an error type.
+			? ct == ContentType.DutchSiteContent
+				? ContentType.DutchErrorState
+				: ContentType.EnglishErrorState
+			: ct;
+
 		bool saveOK = contentOK
-			? file.WriteValidationDate(DateTime.Now.ToUniversalTime())
-			: file.WriteErrorState(errorState);
+			? file.WriteValidationDate(DateTime.Now.ToUniversalTime(), ct)
+			: (file.WriteValidationDate(DateTime.Now.ToUniversalTime(), ct) && file.WriteErrorState(errorState));
 
 		if (saveOK)
 		{
@@ -168,9 +179,9 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 			{
 				Id = "error",
 				Order = 1,
-				Title = "Couldn't write validation-date.xml",
-				Description = "Failed to write validation-date.xml to disk.",
-				Html = "Failed to write validation-date to disk.<br> Check Log. Check directory for permissions / conflicts. Check File for illegal characters."
+				Title = "Couldn't write validation-dates.xml",
+				Description = "Failed to write validation-dates.xml to disk.",
+				Html = "Failed to write validation-dates to disk.<br> Check Log. Check directory for permissions / conflicts. Check File for illegal characters."
 			} 
 			: new ValidationResult
 			{
@@ -184,10 +195,10 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 		return false;
 	}
 
-	private bool ClearValidation()
+	private bool ClearValidation(ContentType ct)
 	{
 		bool errorStateCleared = file.DeleteErrorState();
-		bool validationDateCleared = file.DeleteValidationDate();
+		bool validationDateCleared = file.DeleteValidationDate(ct);
 		return errorStateCleared && validationDateCleared;
 	}
 
