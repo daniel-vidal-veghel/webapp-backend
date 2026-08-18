@@ -5,13 +5,13 @@ using WebAppBackend.Api.Models;
 
 namespace WebAppBackend.Api.DataAccess;
 
-/// <summary>All code for reading/writing the site-content.xml, error-state.xml and validation-date.xml files. </summary>
+/// <summary>All code for reading/writing the site-content.xml, error-state.xml and validation-dates.xml files. </summary>
 /// <remarks>Fun fact: if you rename it to FileAccess, System.Io.FileStream stops working. </remarks>
 public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IConfiguration configuration) : IDataAccess
 {
 	private readonly ILogger<DataAccess> _logger = logger;
 	private readonly string _siteContentFilePath = ContentPaths.SiteContentFilePath(env, configuration);
-	private readonly string _EnglishContentFilePath = ContentPaths.EnglishContentFilePath(env, configuration);
+	private readonly string _englishContentFilePath = ContentPaths.EnglishContentFilePath(env, configuration);
 	private readonly string _validationDateFilePath = ContentPaths.ValidationDateFilePath(env, configuration);
 	private readonly string _errorStateFilePath = ContentPaths.ErrorStateFilePath(env, configuration);
 
@@ -150,7 +150,7 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 	}
 
 	/// <summary>
-	/// Writes the validation timestamp to the validation-date.xml file.
+	/// Writes the validation timestamp to the validation-dates.xml file.
 	/// Has to be UTC because you don't know where a 3rd party server might be running.
 	/// </summary>
 	public bool WriteValidationDate(DateTime validatedAtUtc)

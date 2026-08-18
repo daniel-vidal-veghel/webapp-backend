@@ -20,7 +20,7 @@ namespace WebAppBackend.Api.Services;
 /// <br/>
 /// - If error-state.xml exists, prior validation failed. Return error-state instead.
 /// <br/>
-/// - Else, if validation-date's timestamp is newer than
+/// - Else, if validation-dates's timestamp is newer than
 ///   site-content's last-write time, that file hasn't been modified after validation. Return that. This is the standard behavior.
 /// <br/>
 /// - Otherwise, validation is missing or stale. Validate and retry. 
