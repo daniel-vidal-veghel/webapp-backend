@@ -1,6 +1,7 @@
 ﻿using WebAppBackend.Api.DataAccess;
 using WebAppBackend.Api.Enums;
 using WebAppBackend.Api.Models;
+using static WebAppBackend.Api.Models.ContentSection;
 namespace WebAppBackend.Api.Validation;
 
 public class ContentValidator(IDataAccess dataAccess) : IContentValidator
@@ -158,7 +159,19 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 
 		bool contentOK = errorState.Count == 0;
 
-		ct = !contentOK// Convert ct to an error type.
+		if (!contentOK)
+			errorState.Insert(0, new ValidationResult
+			{
+				Type = SectionType.Header,
+				Id = "header",
+				Order = -1,
+				Title = $"Errors:",
+				Description = $"Error state for {ct}",
+				Html = $"Error state for {ct}"
+			});
+
+		// Convert ct to an error type.
+		ct = !contentOK
 			? ct == ContentType.DutchSiteContent
 				? ContentType.DutchErrorState
 				: ContentType.EnglishErrorState
