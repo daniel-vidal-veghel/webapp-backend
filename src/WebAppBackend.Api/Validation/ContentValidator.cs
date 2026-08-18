@@ -197,8 +197,9 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 
 	private bool ClearValidation(ContentType ct)
 	{
+		var errorType = ct == ContentType.DutchErrorState ? ContentType.DutchErrorState : ContentType.EnglishErrorState;
 		bool errorStateCleared = file.DeleteErrorState();
-		bool validationDateCleared = file.DeleteValidationDate(ct);
+		bool validationDateCleared = file.DeleteValidationDate(ct) && file.DeleteValidationDate(errorType);
 		return errorStateCleared && validationDateCleared;
 	}
 
