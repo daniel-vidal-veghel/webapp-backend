@@ -15,39 +15,28 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 	private readonly string _validationDatesFilePath = ContentPaths.ValidationDateFilePath(env, configuration);
 	private readonly string _errorStateFilePath = ContentPaths.ErrorStateFilePath(env, configuration);
 
-	public bool TouchContentFile(out ValidationResult? error)
+	public bool TouchFile(ContentType ct, out ValidationResult? error)
 	{
-		if (!File.Exists(_siteContentFilePath))
+		if (File.Exists(PathFromContentType(ct)))
 		{
-			_logger.LogWarning("XML file not found at {Path}", _siteContentFilePath);
-			error = new ValidationResult
-			{
-				Id = "error",
-				Order = 1,
-				Title = "XML file not found",
-				Description = "XML file not found.",
-				Html = $"TouchContentFile"
-			};
-			return false;
+			error = null;
+			return true;
 		}
-
-		error = null;
-		return true;
+		// else	
+		_logger.LogWarning("XML file not found at {Path}", _siteContentFilePath);
+		error = new ValidationResult
+		{
+			Id = "error",
+			Order = 1,
+			Title = $"{ct}: XML file not found",
+			Description = $"{ct}: XML file not found",
+			Html = $"DataAccess.TouchFile"
+		};
+		return false;
 	}
 	
 	public List<ContentSection> ReadSiteContent(ContentType ct, out List<ValidationResult>? criticalError)
-	{
-		switch (ct)
-		{
-			default:
-			case ContentType.DutchSiteContent:
-				return ParseSectionsFromFile(_siteContentFilePath, out criticalError);
-			case ContentType.EnglishSiteContent:
-				return ParseSectionsFromFile(_EnglishContentFilePath, out criticalError);
-			case ContentType.ErrorState:
-				return ParseSectionsFromFile(_errorStateFilePath, out criticalError);
-		}   
-	}
+		=> ParseSectionsFromFile( PathFromContentType(ct), out criticalError);
 	
 	public bool ErrorStateExists() => File.Exists(_errorStateFilePath);
 
@@ -66,6 +55,7 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		return false;
 	}
 
+	// Deletes both validation date and error date.
 	public bool DeleteValidationDate(ContentType ct)
 	{
 		if (!File.Exists(_validationDatesFilePath))
@@ -114,7 +104,7 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 			foreach (ContentType ct in Enum.GetValues<ContentType>())
 			{
 				var raw = document.Root?.Element(XmlTagFromContentType(ct))?.Value;
-			if (DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed))
+				if (DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed))
 					result.Dates[ct] = parsed.ToUniversalTime();
 
 				else if (!string.IsNullOrEmpty(raw))
@@ -135,12 +125,17 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 	/// Returns the last modified timestamp of the site-content.xml file, or null if the file does not exist.
 	/// Has to be UTC because you might be editing the XML file on a local machine with a different time zone than the server.
 	/// </summary>
-	public DateTime? ContentXmlLastModified()
+	public DateTime? ContentXmlLastModified(ContentType ct)
 	{
-		if (!File.Exists(_siteContentFilePath))
-			return null;
-
-		return File.GetLastWriteTimeUtc(_siteContentFilePath);
+		switch (ct)
+		{
+			case ContentType.DutchSiteContent:
+				return !File.Exists(_siteContentFilePath) ? null : File.GetLastWriteTimeUtc(_siteContentFilePath);
+			case ContentType.EnglishSiteContent:
+				return !File.Exists(_englishContentFilePath) ? null : File.GetLastWriteTimeUtc(_englishContentFilePath);
+			default:
+				throw new ArgumentOutOfRangeException();
+		}
 	}
 
 	public bool WriteErrorState(List<ValidationResult> errorState)
@@ -188,9 +183,9 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		{
 			XDocument document;
 		
-				using var stream = new FileStream(_validationDatesFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-				document = XDocument.Load(stream);
-
+			using var stream = new FileStream(_validationDatesFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+			document = XDocument.Load(stream);
+		
 			var root = document.Root!;
 			var value = validatedAtUtc.ToUniversalTime().ToString("o");
 			var existing = root.Element(tag);
@@ -300,6 +295,24 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 			case ContentType.DutchErrorState: return "NL_Error";
 			case ContentType.EnglishErrorState: return "EN_Error";
 			default: throw new ArgumentOutOfRangeException();
+		}
+	}
+
+	// Note that this is a value type and defaults to zero.
+	private string PathFromContentType(ContentType ct)
+	{
+		switch (ct)
+		{
+			
+			case ContentType.DutchSiteContent:
+				return _siteContentFilePath;
+			case ContentType.EnglishSiteContent:
+				return _englishContentFilePath;
+			case ContentType.DutchErrorState:
+			case ContentType.EnglishErrorState:
+				return _errorStateFilePath;
+			default:
+				throw new ArgumentOutOfRangeException();
 		}
 	}
 }
