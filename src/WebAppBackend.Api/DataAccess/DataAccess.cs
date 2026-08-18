@@ -12,7 +12,7 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 	private readonly ILogger<DataAccess> _logger = logger;
 	private readonly string _siteContentFilePath = ContentPaths.SiteContentFilePath(env, configuration);
 	private readonly string _englishContentFilePath = ContentPaths.EnglishContentFilePath(env, configuration);
-	private readonly string _validationDateFilePath = ContentPaths.ValidationDateFilePath(env, configuration);
+	private readonly string _validationDatesFilePath = ContentPaths.ValidationDateFilePath(env, configuration);
 	private readonly string _errorStateFilePath = ContentPaths.ErrorStateFilePath(env, configuration);
 
 	public bool TouchContentFile(out ValidationResult? error)
@@ -66,17 +66,32 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		return false;
 	}
 
-	public bool DeleteValidationDate()
+	public bool DeleteValidationDate(ContentType ct)
 	{
+		if (!File.Exists(_validationDatesFilePath))
+			CreateValidationFile();
+		
 		try
 		{
-			if (File.Exists(_validationDateFilePath))
-				File.Delete(_validationDateFilePath);
+			XDocument document;
+		
+			using var stream = new FileStream(_validationDatesFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+			document = XDocument.Load(stream);
+
+			var root = document.Root!;
+			var tag = XmlTagFromContentType(ct);
+			var existing = root.Element(tag);
+			if (existing != null)
+				existing.Value = string.Empty;
+			else
+				root.Add(new XElement(tag, string.Empty));
+
+			document.Save(_validationDatesFilePath);
 			return true;
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex, "Failed to delete validation date file at {Path}", _validationDateFilePath);
+			_logger.LogError(ex, "Failed to clear validation date for {ContentType} in {Path}", ct, _validationDatesFilePath);
 		}
 		return false;
 	}
@@ -102,8 +117,10 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 			if (DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed))
 					result.Dates[ct] = parsed.ToUniversalTime();
 
-				else if (raw != null)
+				else if (!string.IsNullOrEmpty(raw))
 					_logger.LogWarning("Could not parse validation timestamp value '{Value}' for {ContentType} in {Path}", raw, ct, _validationDatesFilePath);
+				else
+					result.Dates[ct] = null;
 			}
 		}
 		catch (Exception ex)
@@ -162,31 +179,25 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 	/// </summary>
 	public bool WriteValidationDate(DateTime validatedAtUtc, ContentType ct)
 	{
-		string elementName = XmlTagFromContentType(ct);
+		if (!File.Exists(_validationDatesFilePath))
+			CreateValidationFile();
+
+		string tag = XmlTagFromContentType(ct);
 
 		try
 		{
 			XDocument document;
-			if (File.Exists(_validationDatesFilePath))
-			{
+		
 				using var stream = new FileStream(_validationDatesFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 				document = XDocument.Load(stream);
-			}
-			else
-			{
-				document = new XDocument(
-				new XDeclaration("1.0", "utf-8", null),
-					new XElement("ValidationDates")
-			);
-			}
 
 			var root = document.Root!;
 			var value = validatedAtUtc.ToUniversalTime().ToString("o");
-			var existing = root.Element(elementName);
+			var existing = root.Element(tag);
 			if (existing != null)
 				existing.Value = value;
 			else
-				root.Add(new XElement(elementName, value));
+				root.Add(new XElement(tag, value));
 
 			document.Save(_validationDatesFilePath);
 			return true;
@@ -196,6 +207,30 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 			_logger.LogError(ex, "Failed to write validation date file at {Path}", _validationDatesFilePath);
 		}
 		return false;
+	}
+
+	// Use only if file is completely missing.
+	private void CreateValidationFile()
+	{
+		if (File.Exists(_validationDatesFilePath))
+			return;
+
+		try
+		{
+			var root = new XElement("ValidationDates");
+			foreach (ContentType ct in Enum.GetValues<ContentType>())
+				root.Add(new XElement(XmlTagFromContentType(ct), string.Empty));
+
+			var document = new XDocument(
+				new XDeclaration("1.0", "utf-8", null),
+				root
+			);
+			document.Save(_validationDatesFilePath);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "Failed to create validation dates skeleton file at {Path}", _validationDatesFilePath);
+		}
 	}
 
 	private List<ContentSection> ParseSectionsFromFile(string filePath, out List<ValidationResult>? criticalError)

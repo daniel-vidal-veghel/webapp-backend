@@ -9,7 +9,7 @@ public interface IDataAccess
 	DateTime? ValidationDate();
 	DateTime? ContentXmlLastModified();
 	bool DeleteErrorState();
-	bool DeleteValidationDate();
+	bool DeleteValidationDate(ContentType ct);
 	bool WriteErrorState(List<ValidationResult> errorState);
 	bool WriteValidationDate(DateTime validatedAtUtc, ContentType ct);
 }
