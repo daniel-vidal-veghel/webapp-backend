@@ -81,30 +81,37 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		return false;
 	}
 
-	public DateTime? ValidationDate()
+	/// <summary>
+	/// Gets an object with all validation and error dates.
+	/// </summary>
+	public ValidationDates GetValidationMatrix()
 	{
-		if (!File.Exists(_validationDateFilePath))
-			return null;
+		var result = new ValidationDates();
+
+		if (!File.Exists(_validationDatesFilePath))
+			return result;
 
 		try
 		{
-			using var stream = new FileStream(_validationDateFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+			using var stream = new FileStream(_validationDatesFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 			var document = XDocument.Load(stream);
-			var raw = document.Root?.Value;
 
-			if (DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed))
+			foreach (ContentType ct in Enum.GetValues<ContentType>())
 			{
-				return parsed.ToUniversalTime();
-			}
+				var raw = document.Root?.Element(XmlTagFromContentType(ct))?.Value;
+			if (DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed))
+					result.Dates[ct] = parsed.ToUniversalTime();
 
-			_logger.LogWarning("Could not parse validation timestamp value '{Value}' in {Path}", raw, _validationDateFilePath);
+				else if (raw != null)
+					_logger.LogWarning("Could not parse validation timestamp value '{Value}' for {ContentType} in {Path}", raw, ct, _validationDatesFilePath);
+			}
 		}
 		catch (Exception ex)
 		{
-			_logger.LogWarning(ex, "Failed to read validation timestamp from {Path}", _validationDateFilePath);
+			_logger.LogWarning(ex, "Failed to read validation timestamp matrix from {Path}", _validationDatesFilePath);
 		}
 
-		return null;
+		return result;
 	}
 
 	/// <summary>
@@ -249,7 +256,7 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		}
 	}
 
-	private string XmlTagFromContentType(ContentType ct)
+	private static string XmlTagFromContentType(ContentType ct)
 	{
 		switch (ct)
 		{

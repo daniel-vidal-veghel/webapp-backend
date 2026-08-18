@@ -5,7 +5,7 @@ public interface IDataAccess
 {
 	bool TouchContentFile(out ValidationResult? error);
 	List<ContentSection> ReadSiteContent(ContentType ct,out List<ValidationResult>? criticalError);
-	bool ErrorStateExists();
+	ValidationDates GetValidationMatrix();
 	DateTime? ValidationDate();
 	DateTime? ContentXmlLastModified();
 	bool DeleteErrorState();
