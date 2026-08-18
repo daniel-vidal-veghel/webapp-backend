@@ -7,23 +7,21 @@ namespace WebAppBackend.Api.Services;
 
 #region Documentation
 /// <summary>
-/// Reads the site content from a local, uncompiled XML file.
-/// <br/>
-/// Expected XML shape:<br/>
-/// &lt;Site&gt;<br/>
-/// &lt;Section id="intro" title="Introduction"&gt;<br/>
-/// &lt;Content&gt;&lt;![CDATA[ &lt;p&gt;Some HTML markup...&lt;/p&gt; ]]&gt;&lt;/Content&gt;<br/>
-/// &lt;/Section&gt;<br/>
-/// &lt;/Site&gt;<br/>
-/// <br/>
 /// WorkFlow:
 /// <br/>
-/// - If error-state.xml exists, prior validation failed. Return error-state instead.
+/// - Content and validation state are tracked per language (Dutch/English) via a <see cref="ValidationDates"/> matrix.
 /// <br/>
-/// - Else, if validation-dates's timestamp is newer than
-///   site-content's last-write time, that file hasn't been modified after validation. Return that. This is the standard behavior.
+/// - If either language has a recorded error, that language's error state takes priority and is served regardless
+///   of which language was actually requested. If both languages have an error simultaneously, Dutch
+///   is reported first.
 /// <br/>
-/// - Otherwise, validation is missing or stale. Validate and retry. 
+/// - If the content file has been changed after the error state was recorded, revalidate the changes.
+/// <br/>
+/// - If neither language has a recorded error, the requested language is served directly when its own validation
+///   timestamp is newer than its own content file's last-write time. Otherwise, one revalidation attempt is made.
+/// <br/>
+/// - Revalidation happens at most once per request (depth-limited via the fromWeb flag) to avoid infinite loops;
+///   if it still can't resolve a valid state afterward, a generic error section is logged and returned instead.
 /// </summary>
 #endregion
 public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess dataAccess, IContentValidator contentValidator) : IContentService
@@ -58,49 +56,70 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 	
 	public IReadOnlyList<ContentSection> GetSections(bool fromWeb, string? language)
 	{
+		ValidationDates matrix = file.GetValidationMatrix();
+
+		// Either one of the two is not valid.
+		if (!matrix.IsContentValid(out var errorType))
+			return HandleErrorState(matrix, errorType,fromWeb, language);
+
+		return HandleHealthyContent(matrix, fromWeb, language);
+	}
+
+	private IReadOnlyList<ContentSection> HandleErrorState(ValidationDates matrix, ContentType? errorType, bool fromWeb, string? webLanguage)
+	{
+		var errorDate = matrix.GetErrorDate(errorType);
+		ContentType contentLanguage = errorType == ContentType.DutchErrorState
+			? ContentType.DutchSiteContent
+			: ContentType.EnglishSiteContent;
+
+		if (errorDate >= file.ContentXmlLastModified(contentLanguage))
+			return GetFile(errorType!.Value);
+
+		// avoid loops
+		return fromWeb == true
+			? RevalidateContent(contentLanguage, webLanguage)
+			: ValidationFailure();
+	}
+
+	private IReadOnlyList<ContentSection> HandleHealthyContent(ValidationDates matrix, bool fromWeb, string? webLanguage)
+	{
 		// Hard coded. EN or NL.
-		var contentLanguage = language == "en"
+		var contentLanguage = webLanguage == "en"
 			? ContentType.EnglishSiteContent
 			: ContentType.DutchSiteContent;
 
-		var errorType = contentLanguage == ContentType.DutchSiteContent
-					? ContentType.DutchErrorState
-					: ContentType.EnglishErrorState;
-
-		ValidationDates matrix = file.GetValidationMatrix();
-		var errorDate = matrix.GetErrorDate(errorType);
-
-		if (errorDate.HasValue)
-		{
-			if (errorDate >= file.ContentXmlLastModified(contentLanguage))
-				return GetFile(errorType);
-
-			var sections = file.ReadSiteContent(contentLanguage, out var criticalReadingError);
-			if (criticalReadingError != null)
-				return criticalReadingError;
-
-			return validator.TryValidate(sections, contentLanguage, out var criticalValidationError)
-				? GetSections(false, language) // depth-limited: never loop more than once.
-				: new List<ValidationResult>() { criticalValidationError! };
-		}
-
 		if (!file.TouchFile(contentLanguage, out ValidationResult? error))
-			return new List<ValidationResult>() { error!};
+			return new List<ValidationResult>() { error! };
 
 		if (matrix.GetValidationDate(contentLanguage) >= file.ContentXmlLastModified(contentLanguage)) // Validated after the last time the content was modified = OK!
 			return GetFile(contentLanguage);
+		// avoid loops
+		return fromWeb == true
+			? RevalidateContent(contentLanguage, webLanguage)
+			: ValidationFailure();
+	}
 
-		if (fromWeb == true) // not relooped.
-		{
-			var sections = file.ReadSiteContent(contentLanguage, out var criticalError);
-			if (criticalError != null)
-				return criticalError;
+	private IReadOnlyList<ContentSection> RevalidateContent(ContentType contentLanguage, string? webLanguage)
+	{
+		var sections = file.ReadSiteContent(contentLanguage, out var criticalError);
+		if (criticalError != null)
+			return criticalError;
 
-			return validator.TryValidate(sections, contentLanguage, out var criticalValidationError)
-				? GetSections(false, language) // depth-limited: never loop more than once
-				: new List<ValidationResult>() { criticalValidationError! };
-		}
+		return validator.TryValidate(sections, contentLanguage, out var criticalValidationError)
+			? GetSections(false, webLanguage) // depth-limited: never loop more than once
+			: new List<ValidationResult>() { criticalValidationError! };
+	}
 
+	private IReadOnlyList<ContentSection> GetFile(ContentType ct)
+	{
+		var output = file.ReadSiteContent(ct, out var criticalError);
+		return criticalError != null
+			? criticalError
+			: output;
+	}
+
+	private IReadOnlyList<ContentSection> ValidationFailure()
+	{
 		// log and return an list with a single error section, so the site can still render something. Do not render unvalidated content.
 		_logger.LogError("Could not resolve content validation state even after revalidating.");
 		return new List<ValidationResult>
@@ -114,13 +133,5 @@ public class XmlContentService(ILogger<XmlContentService> logger, IDataAccess da
 				Description = "Critical error: revalidation failed."
 			}
 		};
-	}
-	
-	private IReadOnlyList<ContentSection> GetFile(ContentType ct)
-	{
-		var output = file.ReadSiteContent(ct, out var criticalError);
-		return criticalError != null
-			? criticalError
-			: output;
-	}
+	}	
 }

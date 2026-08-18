@@ -228,6 +228,18 @@ public class DataAccess (ILogger<DataAccess> logger, IWebHostEnvironment env, IC
 		}
 	}
 
+	#region Documentation
+	///<summary>
+	/// Reads the site content from a local, uncompiled XML file.
+	/// <br/>
+	/// Expected XML shape:<br/>
+	/// &lt;Site&gt;<br/>
+	/// &lt;Section id="intro" title="Introduction"&gt;<br/>
+	/// &lt;Content&gt;&lt;![CDATA[ &lt;p&gt;Some HTML markup...&lt;/p&gt; ]]&gt;&lt;/Content&gt;<br/>
+	/// &lt;/Section&gt;<br/>
+	/// &lt;/Site&gt;<br/>
+	/// </summary>
+	#endregion
 	private List<ContentSection> ParseSectionsFromFile(string filePath, out List<ValidationResult>? criticalError)
 	{
 		// This a failsafe for when reading error-state. Shouldn't really happen.
