@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Site>
-	<Section type="setup" title="Welcome!">
+	<Section type="setup" title="Welcome!" description="Introduction">
 		<Content>
-			<![CDATA[en]]>
+			<![CDATA[
+			Hello there! This website came to be because it felt weird that a developer would be emailing files, instead of just having an online portfolio.<br>
+			The site itself is a résumé, and in the github link you can find its code (arguably more important than three pages of autobiography). 
+			The exact process of putting this together and getting it live is documented <a href="#this-site">here</a>.<br>
+			If you do need a file to mail someone, there's a download button on the bottom left. Above that, there's the option to switch to dutch.
+			]]>
 		</Content>
 	</Section>
 	
@@ -69,9 +74,26 @@
 	<Section id="this-site" title="This site / portfolio">
 		<Content>
 			<![CDATA[
-			C# developer who started out as a C++ hobbyist in '99. <br>
-			3 years of experience as a .Net developer. <br>
-			I speak Dutch, English and Portuguese fluently, and can read French, Spanish and German at a moderate level.
+			The concept: a site that serves content, where the content can be updated without downtime.<br>
+			Content lives in an on-disk XML file rather than a database, and the backend re-reads it on every request — no caching, no rebuild.
+			A content validator checks the file's structure on every edit and renders warnings on refresh. Invalid content will not lead to a crash
+			while the site is up.<br>
+<br>
+			Stack: Angular 22 (standalone components) on the frontend, .NET 8 Web API on the backend, deployed
+			together on a single AWS Lightsail instance behind Nginx, with HTTPS via Certbot.
+			Github: <a href="https://github.com/daniel-vidal-veghel/" target="_blank" rel="noopener noreferrer">here</a><br>
+<br>
+			Development: The zero tier iteration was gotten from free claude. Neither back nor front-end worked right off the gate, and it took a couple of days
+			to get everything to work to a minimum degree. From there, a couple of weeks were spent on the front-end, adding basic navigation and making it
+			look slightly better than something out of the Angelfire era.<br>
+			Afterwards, I returned to the back end; broke data access into its own layer,
+			away from the content service, and added a content validator that's available from the business logic. Then, I added support for a second language
+			and a unit testing project. I will continue to work on it, but functionally, it's all it needs.<br>
+<br>			
+			Deployment: After publishing / building both projects, it was ready to go live. Using an AWS account I already had, I purchased a domain name and an
+			Ubuntu instance on Lightsail. Although it was the first time I'd ever worked with linux, it turned out to be relatively straightforward. It needed
+			some basic installing, network access had to be configured, and then files could be copied over.
+			<br>After some edits to config files, the site was finally online.
 		]]>
 		</Content>
 	</Section>

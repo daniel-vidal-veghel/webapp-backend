@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Site>
-	<Section type="setup" title="Welkom!">
+	<Section type="setup" title="Welkom!" description="Inleiding">
 		<Content>
-			<![CDATA[nl]]>
+			<![CDATA[
+			Hallo daar! Deze website is ontstaan omdat het vreemd voelt om bestanden te mailen in plaats van gewoon een online portfolio te hebben.
+			De site zelf is een cv, en via de github-link vind je de bijbehorende code (wat je kunt beargumenteren belangrijker is dan drie pagina's
+			autobiografie).<br>
+			Het exacte proces van het maken en live zetten van deze site staat <a href="#this-site">hier</a> gedocumenteerd.<br>
+			Als je toch een bestand nodig hebt om iemand te mailen, staat er linksonder een downloadknop. Daarboven vind je de optie om over te schakelen
+			naar het Engels.
+			]]>
 		</Content>
 	</Section>
 	
@@ -65,9 +72,26 @@
 	<Section id="this-site" title="Deze site / portfolio">
 		<Content>
 			<![CDATA[
-			C# developer die in '99 als C++ hobbyist begonnen is. <br>
-			3 jaar ervaring als .Net developer. <br>
-			Ik spreek vloeiend Nederlands, Engels en Portugees, en kan matig Frans, Spaans en Duits lezen.
+			Het concept: een site die content serveert, waarbij de content bijgewerkt kan worden zonder downtime.<br>
+			De content staat in een XML-bestand op schijf in plaats van in een database, en de backend leest dit bestand opnieuw in bij elk verzoek — geen caching, geen rebuild.
+			Een content validator controleert de structuur van het bestand bij elke wijziging en toont waarschuwingen bij het verversen. Ongeldige content zorgt niet voor een crash
+			terwijl de site online is.<br>
+<br>
+			Stack: Angular 22 (standalone components) op de frontend, .NET 8 Web API op de backend, gedeployed
+			samen op één AWS Lightsail-instance achter Nginx, met HTTPS via Certbot.
+			Github: <a href="https://github.com/daniel-vidal-veghel/" target="_blank" rel="noopener noreferrer">hier</a><br>
+<br>
+			Ontwikkeling: De zero tier-iteratie kwam uit de gratis versie van Claude. Noch de back-end noch de front-end werkte meteen goed, en het kostte een
+			paar dagen om alles op een minimaal niveau werkend te krijgen. Daarna werden een paar weken besteed aan de front-end, met basisnavigatie en het er
+			iets beter look dan het Angelfire-tijdperk.<br>
+			Daarna ben ik teruggegaan naar de back-end; ik heb data access naar een eigen laag afgesplitst, los van de content service, en een content validator
+			toegevoegd die beschikbaar is vanuit de business logic. Vervolgens heb ik ondersteuning voor een tweede taal toegevoegd, plus een unit testing project.
+			Ik zal eraan blijven werken, maar functioneel is het compleet.<br>
+<br>			
+			Deployment: Na het publiceren/bouwen van beide projecten was alles klaar om live te gaan. Met een AWS-account dat ik al had, heb ik een domeinnaam en een
+			Ubuntu-instance op Lightsail aangeschaft. Hoewel het de eerste keer was dat ik met Linux werkte, bleek het relatief eenvoudig. Er moest
+			wat basisinstallatie gebeuren, netwerktoegang moest worden geconfigureerd, en daarna konden de bestanden gekopieerd worden.
+			<br>Na wat aanpassingen aan configuratiebestanden was de site eindelijk online.
 		]]>
 		</Content>
 	</Section>
