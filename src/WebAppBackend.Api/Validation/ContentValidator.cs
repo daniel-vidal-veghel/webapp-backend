@@ -207,13 +207,14 @@ public class ContentValidator(IDataAccess dataAccess) : IContentValidator
 
 		return false;
 	}
-
+	// Do && not && inline when you're calling writes. If any on the left are false, the right doesn't get to run.
 	private bool ClearValidation(ContentType ct)
 	{
 		var errorType = ct == ContentType.DutchSiteContent ? ContentType.DutchErrorState : ContentType.EnglishErrorState;
 		bool errorStateCleared = file.DeleteErrorState();
-		bool validationDateCleared = file.DeleteValidationDate(ct) && file.DeleteValidationDate(errorType);
-		return errorStateCleared && validationDateCleared;
+		bool contentDateCleared = file.DeleteValidationDate(ct);
+		bool errorDateCleared = file.DeleteValidationDate(errorType);
+		return errorStateCleared && contentDateCleared && errorDateCleared;
 	}
 
 }
