@@ -9,11 +9,13 @@
 	<InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
-  
   <ItemGroup>
-	<!-- Ensures the XML content file is copied next to the executable / published output
+	<!-- Ensures the XML content files are copied next to the executable / published output
 		 and that changes made to it on disk are picked up without recompiling. -->
-	<None Include="Content\site-content.xml">
+	<None Update="Content\site-content.xml">
+	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+	<None Update="Content\site-content-en.xml">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>
 	<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
